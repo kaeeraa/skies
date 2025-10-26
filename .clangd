@@ -1,0 +1,3 @@
+# https://github.com/llvm/llvm-project/issues/96141
+CompileFlags:
+  Remove: [-fmodules-ts, -fdeps-format=p1689r5, -fmodule-mapper, -fmodule-mapper=CMakeFiles/skies.dir/src/main.cpp.o.modmap]
