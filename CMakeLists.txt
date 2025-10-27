@@ -12,7 +12,7 @@ if(CMAKE_EXPORT_COMPILE_COMMANDS)
       ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
 endif()
 
-add_executable(skies src/main.cpp)
+add_executable(skies src/EntryPoint.cpp src/core/Router.cpp)
 
 find_package(boost_filesystem 1.81 REQUIRED)
 target_include_directories(skies PRIVATE ${Boost_INCLUDE_DIRS})
