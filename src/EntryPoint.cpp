@@ -1,7 +1,9 @@
 #include "core/Router.hpp"
+#include "middleware/DockerClient.hpp"
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
+#include <boost/json/impl/serialize.hpp>
 #include <iostream>
 #include <string>
 #include <string_view>
@@ -22,11 +24,14 @@ int main()
   net::io_context ioc;
   tcp::acceptor   acceptor(ioc, { tcp::v4(), 8080 });
   Router          router;
+  DockerClient    docker;
 
-  router.get("/api/", [](const Request& request) {
-    Response response { http::status::ok, request.version() };
+  router.get("/api/containers", [&docker](const Request& request) {
+    json::value containers = docker.listContainers();
+
+    Response    response { http::status::ok, request.version() };
     response.set(http::field::content_type, "application/json");
-    response.body() = R"({"message": "!"})";
+    response.body() = json::serialize(containers);
     response.prepare_payload();
     return response;
   });
