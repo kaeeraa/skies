@@ -9,6 +9,7 @@
     pkgs.ninja
     pkgs.boost
     pkgs.secretspec
+    pkgs.openssl
   ];
 
   # https://devenv.sh/languages/
