@@ -1,5 +1,5 @@
 #include "core/Router.hpp"
-#include "middleware/DockerClient.hpp"
+#include "middleware/DockerMiddleware.hpp"
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
@@ -21,10 +21,10 @@ const int PORT = 8080;
 // Entrypoint
 int main()
 {
-  net::io_context ioc;
-  tcp::acceptor   acceptor(ioc, { tcp::v4(), 8080 });
-  Router          router;
-  DockerClient    docker;
+  net::io_context  ioc;
+  tcp::acceptor    acceptor(ioc, { tcp::v4(), 8080 });
+  Router           router;
+  DockerMiddleware docker;
 
   router.get("/api/containers", [&docker](const Request& request) {
     json::value containers = docker.listContainers();

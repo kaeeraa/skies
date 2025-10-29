@@ -1,4 +1,4 @@
-#include "DockerClient.hpp"
+#include "DockerMiddleware.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/asio/local/stream_protocol.hpp>
@@ -7,7 +7,7 @@
 #include <iostream>
 #include <string>
 
-json::value DockerClient::request(const http::verb& method, const std::string& target, const json::object& body)
+json::value DockerMiddleware::request(const http::verb& method, const std::string& target, const json::object& body)
 {
   http::request<http::string_body> request;
   request.method(method);
