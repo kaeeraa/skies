@@ -1,8 +1,10 @@
 #pragma once
+#include "../core/Logger.hpp"
 #include <boost/asio.hpp>
 #include <boost/asio/local/stream_protocol.hpp>
 #include <boost/beast.hpp>
 #include <boost/json.hpp>
+#include <boost/system/detail/errc.hpp>
 #include <filesystem>
 #include <iostream>
 #include <string>
@@ -11,6 +13,7 @@ namespace asio  = boost::asio;
 namespace beast = boost::beast;
 namespace http  = beast::http;
 namespace json  = boost::json;
+namespace errc  = boost::system::errc;
 
 class DockerMiddleware {
   public:
@@ -20,11 +23,25 @@ class DockerMiddleware {
   DockerMiddleware()
     : socket(io)
   {
-    if (!std::filesystem::exists("/var/run/docker.sock")) {
-      throw std::runtime_error("Docker socket not found");
+    socket.connect({ "/var/run/docker.sock" }, error);
+
+    if (!error) {
+      return;
     }
 
-    socket.connect(asio::local::stream_protocol::endpoint("/var/run/docker.sock"));
+    if (error == errc::permission_denied) {
+      Logger::instance()
+        .fatal("Not enough permissions to connect to Docker socket");
+      exit(1);
+    } else if (error == errc::no_such_file_or_directory) {
+      Logger::instance()
+        .fatal("Docker socket not found");
+      exit(1);
+    } else {
+      Logger::instance()
+        .fatal("Unknown error while connecting to socket: " + error.message() + "\n");
+      exit(1);
+    }
   }
 
   // methods (public)
@@ -34,4 +51,5 @@ class DockerMiddleware {
   // fields (private)
   asio::io_context                     io;
   asio::local::stream_protocol::socket socket;
+  boost::system::error_code            error;
 };

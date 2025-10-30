@@ -1,5 +1,6 @@
 
 #pragma once
+#include "Logger.hpp"
 #include <boost/beast/http.hpp>
 #include <functional>
 #include <string>
@@ -20,10 +21,14 @@ class Router {
   public:
   inline void get(const std::string& path, Handler handler)
   {
+    Logger::instance()
+      .trace(std::format("Created route with path {} (M: GET)", path));
     getRoutes[path] = std::move(handler);
   }
   inline void post(const std::string& path, Handler handler)
   {
+    Logger::instance()
+      .trace(std::format("Created route with path {} (M: POST)", path));
     postRoutes[path] = std::move(handler);
   }
 
