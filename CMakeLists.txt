@@ -14,7 +14,7 @@ endif()
 
 add_executable(
   skies src/EntryPoint.cpp src/core/Router.cpp
-        src/middleware/DockerMiddleware.cpp src/client/DockerClient.hpp)
+        src/middleware/DockerMiddleware.cpp src/client/DockerClient.cpp)
 
 find_package(boost_json 1.81 REQUIRED)
 target_include_directories(skies PRIVATE ${Boost_INCLUDE_DIRS})

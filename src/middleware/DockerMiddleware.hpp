@@ -3,6 +3,7 @@
 #include <boost/asio/local/stream_protocol.hpp>
 #include <boost/beast.hpp>
 #include <boost/json.hpp>
+#include <filesystem>
 #include <iostream>
 #include <string>
 
@@ -14,10 +15,15 @@ namespace json  = boost::json;
 class DockerMiddleware {
   public:
   // constructors
+  DockerMiddleware(const DockerMiddleware&)            = delete;
+  DockerMiddleware& operator=(const DockerMiddleware&) = delete;
   DockerMiddleware()
-    : io()
-    , socket(io)
+    : socket(io)
   {
+    if (!std::filesystem::exists("/var/run/docker.sock")) {
+      throw std::runtime_error("Docker socket not found");
+    }
+
     socket.connect(asio::local::stream_protocol::endpoint("/var/run/docker.sock"));
   }
 

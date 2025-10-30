@@ -1,10 +1,10 @@
 #include "client/DockerClient.hpp"
 #include "core/Router.hpp"
-#include "middleware/DockerMiddleware.hpp"
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/json/impl/serialize.hpp>
+#include <filesystem>
 #include <iostream>
 #include <string>
 #include <string_view>
@@ -22,10 +22,10 @@ const int PORT = 8080;
 // Entrypoint
 int main()
 {
-  net::io_context          ioc;
-  tcp::acceptor            acceptor(ioc, { tcp::v4(), 8080 });
-  Router                   router;
-  DockerClient::Containers containers;
+  net::io_context    ioc;
+  tcp::acceptor      acceptor(ioc, { tcp::v4(), 8080 });
+  Router             router;
+  Docker::Containers containers;
 
   router.get("/api/containers", [&containers](const Request& request) {
     json::value body = containers.list();
