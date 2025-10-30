@@ -1,4 +1,5 @@
 #include "client/DockerClient.hpp"
+#include "core/Logger.hpp"
 #include "core/Router.hpp"
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
@@ -26,6 +27,9 @@ int main()
   tcp::acceptor      acceptor(ioc, { tcp::v4(), 8080 });
   Router             router;
   Docker::Containers containers;
+  const Logger&      logger = Logger::instance();
+
+  logger.info("Logger initialized");
 
   router.get("/api/containers", [&containers](const Request& request) {
     json::value body = containers.list();
@@ -37,7 +41,7 @@ int main()
     return response;
   });
 
-  std::cout << std::format("Server running on http://0.0.0.0:{}{}", std::to_string(PORT), "\n");
+  logger.info(std::format("Server running on http://0.0.0.0:{}{}", std::to_string(PORT), "\n"));
 
   for (;;) {
     tcp::socket socket(ioc);
