@@ -1,3 +1,4 @@
+#include "client/DockerClient.hpp"
 #include "core/Router.hpp"
 #include "middleware/DockerMiddleware.hpp"
 #include <boost/asio.hpp>
@@ -21,17 +22,17 @@ const int PORT = 8080;
 // Entrypoint
 int main()
 {
-  net::io_context  ioc;
-  tcp::acceptor    acceptor(ioc, { tcp::v4(), 8080 });
-  Router           router;
-  DockerMiddleware docker;
+  net::io_context          ioc;
+  tcp::acceptor            acceptor(ioc, { tcp::v4(), 8080 });
+  Router                   router;
+  DockerClient::Containers containers;
 
-  router.get("/api/containers", [&docker](const Request& request) {
-    json::value containers = docker.listContainers();
+  router.get("/api/containers", [&containers](const Request& request) {
+    json::value body = containers.list();
 
     Response    response { http::status::ok, request.version() };
     response.set(http::field::content_type, "application/json");
-    response.body() = json::serialize(containers);
+    response.body() = json::serialize(body);
     response.prepare_payload();
     return response;
   });
