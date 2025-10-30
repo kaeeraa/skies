@@ -22,7 +22,7 @@ class DockerMiddleware {
   }
 
   // methods (public)
-  json::value request(const http::verb& method, const std::string& target, const json::object& body = {});
+  json::value request(const http::verb& method, const std::string_view target, const json::object& body = {});
 
   private:
   // fields (private)

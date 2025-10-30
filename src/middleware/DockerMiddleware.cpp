@@ -7,7 +7,7 @@
 #include <iostream>
 #include <string>
 
-json::value DockerMiddleware::request(const http::verb& method, const std::string& target, const json::object& body)
+json::value DockerMiddleware::request(const http::verb& method, const std::string_view target, const json::object& body)
 {
   http::request<http::string_body> request;
   request.method(method);
