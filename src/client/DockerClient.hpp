@@ -24,4 +24,16 @@ class Containers {
   boost::json::value unpause(std::string_view id);
   boost::json::value attach(std::string_view id);
 };
+
+class Images {
+  private:
+  DockerMiddleware middleware;
+
+  public:
+  boost::json::value list();
+  boost::json::value build();
+  boost::json::value prune();
+  boost::json::value create(std::string_view name, const boost::json::object& body);
+  boost::json::value inspect();
+};
 }
