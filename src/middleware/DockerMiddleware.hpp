@@ -23,7 +23,18 @@ class DockerMiddleware {
   DockerMiddleware()
     : socket(io)
   {
-    socket.connect({ "/var/run/docker.sock" }, error);
+    std::string path = std::getenv("DOCKER_HOST");
+    if (path.empty()) {
+      Logger::instance()
+        .fatal("DOCKER_HOST variable is empty");
+      exit(1);
+    }
+
+    if (path.rfind("unix://", 0) == 0) {
+      path = path.substr(7);
+    }
+
+    error = socket.connect({ path }, error);
 
     if (!error) {
       return;
