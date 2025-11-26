@@ -1,10 +1,13 @@
 #include "client/DockerClient.hpp"
 #include "core/Logger.hpp"
 #include "core/Router.hpp"
+#include "schema/Request.schema.hpp"
+#include "utility/Json.hpp"
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/json/impl/serialize.hpp>
+#include <boost/json/parse.hpp>
 #include <filesystem>
 #include <iostream>
 #include <string>
@@ -33,6 +36,17 @@ int main()
 
   router.get("/api/containers", [&containers](const Request& request) {
     json::value body = containers.list();
+
+    Response    response { http::status::ok, request.version() };
+    response.set(http::field::content_type, "application/json");
+    response.body() = json::serialize(body);
+    response.prepare_payload();
+    return response;
+  });
+
+  router.post("/api/containers/create", [&containers](const Request& request) {
+    const auto  json  = parseJson<Requests::Containers::Create>(request.body());
+    json::value body = containers.create(json);
 
     Response    response { http::status::ok, request.version() };
     response.set(http::field::content_type, "application/json");

@@ -1,5 +1,6 @@
 #include "DockerClient.hpp"
 #include "../middleware/DockerMiddleware.hpp"
+#include "../schema/Request.schema.hpp"
 #include <format>
 #include <string>
 
@@ -8,10 +9,11 @@ json::value Docker::Containers::list()
   return middleware.request(http::verb::get, "/containers/json");
 }
 
-json::value Docker::Containers::create(std::string_view name, const json::object& body)
+json::value Docker::Containers::create(const Requests::Containers::Create& body)
 {
-  const std::string target = std::format("/containers/create?name={}", name);
-  return middleware.request(http::verb::post, target, body);
+  const auto target = std::format("/containers/create?name={}", body.name);
+  const auto jv     = json::value_from(body).as_object();
+  return middleware.request(http::verb::post, target, jv);
 }
 
 json::value Docker::Containers::inspect(std::string_view id)

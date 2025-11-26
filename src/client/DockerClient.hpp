@@ -1,5 +1,6 @@
 #pragma once
 #include "../middleware/DockerMiddleware.hpp"
+#include "../schema/Request.schema.hpp"
 #include <boost/json.hpp>
 #include <string_view>
 
@@ -10,7 +11,7 @@ class Containers {
 
   public:
   boost::json::value list();
-  boost::json::value create(std::string_view name, const boost::json::object& body);
+  boost::json::value create(const Requests::Containers::Create& body);
   boost::json::value inspect(std::string_view id);
   boost::json::value processes(std::string_view id);
   boost::json::value export_(std::string_view id);
