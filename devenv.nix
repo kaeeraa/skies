@@ -10,6 +10,7 @@
     pkgs.boost
     pkgs.secretspec
     pkgs.openssl
+    pkgs.protobuf
   ];
 
   # https://devenv.sh/languages/

@@ -23,5 +23,6 @@ add_executable(
   src/utility/QueryBuilder.hpp)
 
 find_package(Boost 1.81 REQUIRED COMPONENTS json log log_setup)
+find_package(Protobuf REQUIRED)
 target_include_directories(skies PRIVATE ${Boost_INCLUDE_DIRS})
 target_link_libraries(skies PRIVATE ${Boost_LIBRARIES})
