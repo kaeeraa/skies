@@ -1,8 +1,16 @@
 #pragma once
+#include <atomic>
 #include <boost/describe.hpp>
 #include <boost/json.hpp>
+#include <optional>
 
 namespace Requests::Containers {
+struct List {
+  std::optional<bool> all;
+  std::optional<int>  limit;
+  std::optional<bool>  size;
+  std::optional<std::string> filters;
+};
 struct Create {
   std::string              name;
   std::string              hostname;

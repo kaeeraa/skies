@@ -1,12 +1,23 @@
 #include "DockerClient.hpp"
 #include "../middleware/DockerMiddleware.hpp"
 #include "../schema/Request.schema.hpp"
+#include "../utility/QueryBuilder.hpp"
+#include <boost/json.hpp>
+#include <boost/json/value_to.hpp>
 #include <format>
 #include <string>
 
-json::value Docker::Containers::list()
+Responses::Containers::List Docker::Containers::list(const Requests::Containers::List& body)
 {
-  return middleware.request(http::verb::get, "/containers/json");
+  QueryBuilder qb;
+  qb.add("all", body.all)
+    .add("limit", body.limit)
+    .add("size", body.size)
+    .add("filters", body.filters);
+
+  const std::string target = qb.build("/containers/json");
+  const auto        raw    = middleware.request(http::verb::get, target);
+  return json::value_to<Responses::Containers::List>(raw);
 }
 
 json::value Docker::Containers::create(const Requests::Containers::Create& body)

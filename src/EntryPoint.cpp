@@ -6,8 +6,11 @@
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
+#include <boost/json/fwd.hpp>
 #include <boost/json/impl/serialize.hpp>
 #include <boost/json/parse.hpp>
+#include <boost/json/serialize.hpp>
+#include <boost/json/value_to.hpp>
 #include <filesystem>
 #include <iostream>
 #include <string>
@@ -34,21 +37,22 @@ int main()
 
   logger.info("Logger initialized");
 
-  router.get("/api/containers", [&containers](const Request& request) {
-    json::value body = containers.list();
+  router.get("/api/containers", [&containers](const Request& raw) {
+    auto     request = parseJson<Requests::Containers::List>(raw.body());
+    auto     body    = containers.list(request);
 
-    Response    response { http::status::ok, request.version() };
+    Response response { http::status::ok, raw.version() };
     response.set(http::field::content_type, "application/json");
-    response.body() = json::serialize(body);
+    response.body() = json::serialize(json::value_from(body));
     response.prepare_payload();
     return response;
   });
 
-  router.post("/api/containers/create", [&containers](const Request& request) {
-    const auto  json  = parseJson<Requests::Containers::Create>(request.body());
+  router.post("/api/containers/create", [&containers](const Request& raw) {
+    const auto  json = parseJson<Requests::Containers::Create>(raw.body());
     json::value body = containers.create(json);
 
-    Response    response { http::status::ok, request.version() };
+    Response    response { http::status::ok, raw.version() };
     response.set(http::field::content_type, "application/json");
     response.body() = json::serialize(body);
     response.prepare_payload();
