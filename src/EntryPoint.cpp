@@ -45,13 +45,10 @@ int main()
     containers::request::List request;
     containers::response::List response;
 
-    if (const absl::Status status = JsonToMessage(raw.body(), &request);
-        !raw.body().empty() && !status.ok()) {
-      Logger::instance().error("Failed to parse {Containers::List} request: " + status.ToString());
+    if (const bool status = request.ParseFromString(raw.body()); !status) {
       response.mutable_base()->set_error("Failed to parse {Containers::List} request");
       return buildResponse(response, raw.version());
     }
-
     response = containers.list(request);
     return buildResponse(response, raw.version());
   });
