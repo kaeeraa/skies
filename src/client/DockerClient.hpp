@@ -7,6 +7,7 @@
 
 namespace containers = api::v1::containers;
 namespace json = boost::json;
+using QueryMap = std::unordered_map<std::string, std::string>;
 
 namespace Docker {
 class Containers {

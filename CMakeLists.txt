@@ -51,7 +51,8 @@ add_executable(
   src/client/DockerClient.cpp
   src/utility/QueryBuilder.hpp
   src/utility/ProtoBuffer.cpp
-  src/utility/ResponseBuilder.hpp)
+  src/utility/ResponseBuilder.hpp
+  src/utility/PopQuery.hpp)
 
 target_compile_options(skies PRIVATE -Wall -Wextra -Wpedantic
                                      -Wno-nullability-extension)

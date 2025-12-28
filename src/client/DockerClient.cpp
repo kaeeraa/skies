@@ -13,6 +13,7 @@
 #include <string>
 
 namespace containers = api::v1::containers;
+using QueryMap = std::unordered_map<std::string, std::string>;
 
 containers::response::List Docker::Containers::list(const containers::request::List& request)
 {

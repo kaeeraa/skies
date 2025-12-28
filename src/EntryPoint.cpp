@@ -2,7 +2,7 @@
 #include "client/DockerClient.hpp"
 #include "core/Logger.hpp"
 #include "core/Router.hpp"
-#include "utility/ProtoBuffer.hpp"
+#include "utility/PopQuery.hpp"
 #include "utility/ResponseBuilder.hpp"
 #include <absl/status/status.h>
 #include <boost/asio.hpp>
@@ -45,12 +45,27 @@ int main()
     containers::request::List request;
     containers::response::List response;
 
-    if (const bool status = request.ParseFromString(raw.body()); !status) {
-      response.mutable_base()->set_error("Failed to parse {Containers::List} request");
-      return buildResponse(response, raw.version());
+    const auto& safeStoi = [](const std::string& string) {
+      try {
+        return std::stoi(string);
+      } catch (...) {
+        return 0;
+      }
+    };
+
+    for (const auto& [k, v] : popQuery(std::string(raw.target()))) {
+      if (k == "all") {
+        request.set_all(v == "true" ? true : false);
+      } else if (k == "limit") {
+        request.set_limit(safeStoi(v));
+      } else if (k == "size") {
+        request.set_size(safeStoi(v));
+      } else if (k == "filters") {
+        request.set_filters(v);
+      }
     }
-    response = containers.list(request);
-    return buildResponse(response, raw.version());
+
+    return buildResponse(containers.list(request), raw.version());
   });
 
   router.post("/api/containers", [&containers](const Request& raw) {
