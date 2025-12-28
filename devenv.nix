@@ -11,6 +11,7 @@
     pkgs.secretspec
     pkgs.openssl
     pkgs.protobuf
+    pkgs.lldb
   ];
 
   # https://devenv.sh/languages/
