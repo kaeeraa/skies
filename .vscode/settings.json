@@ -1,3 +1,7 @@
 {
-  "sonarlint.pathToCompileCommands": "${workspaceFolder}/build/compile_commands.json"
+  "sonarlint.pathToCompileCommands": "${workspaceFolder}/build/compile_commands.json",
+  "sonarlint.connectedMode.project": {
+    "connectionId": "kaeeraa",
+    "projectKey": "kaeeraa_skies"
+  }
 }
