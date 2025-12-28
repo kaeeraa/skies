@@ -36,7 +36,6 @@
     alejandra.enable = true;
     cmake-format.enable = true;
     deadnix.enable = true;
-    markdownlint.enable = true;
     statix.enable = true;
   };
 
