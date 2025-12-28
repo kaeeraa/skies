@@ -39,5 +39,18 @@
     statix.enable = true;
   };
 
+  tasks = {
+    "skies:build" = {
+      exec = "cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_C_COMPILER:FILEPATH=${pkgs.clang.out}/bin/clang -DCMAKE_CXX_COMPILER:FILEPATH=${pkgs.clang.out}/bin/clang++ --no-warn-unused-cli -S . -B ./build -G Ninja";
+      cwd = "${config.git.root}";
+    };
+    "skies:run" = {
+      exec = "./build/skies";
+      before = ["skies:build"];
+      cwd = "${config.git.root}";
+    };
+  };
+
+  process.manager.implementation = "overmind";
   env.CACHIX_AUTH_TOKEN = config.secretspec.secrets.CACHIX_AUTH_TOKEN or "";
 }
