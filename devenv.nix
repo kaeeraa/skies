@@ -12,6 +12,7 @@
     pkgs.openssl
     pkgs.protobuf
     pkgs.lldb
+    pkgs.gdb
   ];
 
   # https://devenv.sh/languages/
