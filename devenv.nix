@@ -13,6 +13,8 @@
     pkgs.protobuf
     pkgs.lldb
     pkgs.gdb
+    pkgs.mold-wrapped
+    pkgs.ccache
   ];
 
   # https://devenv.sh/languages/

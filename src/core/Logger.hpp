@@ -18,15 +18,15 @@ class Logger {
 
     boost::log::add_common_attributes();
     boost::log::core::get()->set_filter(
-      boost::log::trivial::severity >= boost::log::trivial::info);
+      boost::log::trivial::severity >= boost::log::trivial::trace);
   };
 
   public:
-  Logger(const Logger&)            = delete;
+  Logger(const Logger&) = delete;
   Logger& operator=(const Logger&) = delete;
 
   // singleton
-  static Logger& instance()
+  inline static Logger& instance()
   {
     static Logger instance;
     return instance;

@@ -10,8 +10,8 @@
 
 json::value DockerMiddleware::request(const http::verb& method, const std::string_view target, const json::object& body)
 {
-  const auto& serialized   = json::serialize(body);
-  const auto& methodString = std::string(to_string(method));
+  const std::string& serialized   = json::serialize(body);
+  const std::string& methodString = std::string(to_string(method));
 
   Logger::instance()
     .trace(std::format("New request to docker (M:{} ; T:{} ; B: {})", methodString, target, serialized));

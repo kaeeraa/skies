@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package api.v1.containers.response;
+
+message BaseResponse {
+  optional string error = 1;
+}
+
+message Health {
+  string Status        = 1;
+  int32  FailingStreak = 2;
+}
+
+message Ports {
+  int32 PrivatePort = 1;
+  int32 PublicPort = 2;
+  string Type = 3;
+  string IP = 4;
+}
+
+message ListItem {
+  string              Id         = 1;
+  repeated string     Names      = 2;
+  string              Image      = 3;
+  string              ImageID    = 4;
+  string              Command    = 5;
+  int32               Created    = 6;
+  int32               SizeRw     = 7;
+  int32               SizeRootFs = 8;
+  map<string, string> Labels     = 9;
+  string              State      = 10;
+  string              Status     = 11;
+  Health              Health     = 12;
+  repeated Ports      Ports      = 13;
+}
+
+message List {
+  BaseResponse      base = 1;
+  repeated ListItem data = 2;
+}
+
+message Create {
+  BaseResponse base = 1;
+  string       id   = 2;
+}

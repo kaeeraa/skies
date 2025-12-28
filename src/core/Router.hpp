@@ -1,4 +1,3 @@
-
 #pragma once
 #include "Logger.hpp"
 #include <boost/beast/http.hpp>
@@ -8,9 +7,9 @@
 
 namespace http = boost::beast::http;
 
-using Request  = http::request<http::string_body>;
+using Request = http::request<http::string_body>;
 using Response = http::response<http::string_body>;
-using Handler  = std::function<Response(const Request&)>;
+using Handler = std::function<Response(const Request&)>;
 
 class Router {
   // fields
@@ -32,5 +31,5 @@ class Router {
     postRoutes[path] = std::move(handler);
   }
 
-  Response route(const Request& request);
+  Response route(const Request& request) const;
 };

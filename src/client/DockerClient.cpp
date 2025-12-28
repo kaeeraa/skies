@@ -1,30 +1,66 @@
 #include "DockerClient.hpp"
 #include "../middleware/DockerMiddleware.hpp"
-#include "../schema/Request.schema.hpp"
+#include "../utility/ProtoBuffer.hpp"
 #include "../utility/QueryBuilder.hpp"
+#include <absl/status/status.h>
 #include <boost/json.hpp>
+#include <boost/json/object.hpp>
+#include <boost/json/parse.hpp>
+#include <boost/json/serialize.hpp>
 #include <boost/json/value_to.hpp>
 #include <format>
+#include <google/protobuf/util/json_util.h>
 #include <string>
 
-Responses::Containers::List Docker::Containers::list(const Requests::Containers::List& body)
+namespace containers = api::v1::containers;
+
+containers::response::List Docker::Containers::list(const containers::request::List& request)
 {
+  containers::response::List response;
   QueryBuilder qb;
-  qb.add("all", body.all)
-    .add("limit", body.limit)
-    .add("size", body.size)
-    .add("filters", body.filters);
+  qb.add("all", request.all())
+    .add("limit", request.limit())
+    .add("size", request.size())
+    .add("filters", request.filters());
 
   const std::string target = qb.build("/containers/json");
-  const auto        raw    = middleware.request(http::verb::get, target);
-  return json::value_to<Responses::Containers::List>(raw);
+  const json::value raw = json::object {
+    { "data", middleware.request(http::verb::get, target) }
+  };
+
+  if (raw.as_object().contains("error")) {
+    response.mutable_data()->Clear();
+    response.mutable_base()->set_error(raw.at("error").as_string().c_str());
+  }
+  if (const absl::Status status = JsonToMessage(raw, &response); !status.ok()) {
+    Logger::instance().error("Failed to parse {Containers::List} response: " + status.ToString());
+    response.mutable_data()->Clear();
+    response.mutable_base()->set_error("Failed to parse {Containers::List} response");
+  }
+
+  return response;
 }
 
-json::value Docker::Containers::create(const Requests::Containers::Create& body)
+containers::response::Create Docker::Containers::create(const containers::request::Create& request)
 {
-  const auto target = std::format("/containers/create?name={}", body.name);
-  const auto jv     = json::value_from(body).as_object();
-  return middleware.request(http::verb::post, target, jv);
+  containers::response::Create response;
+  const std::string target = "/containers/create";
+  json::value rawRequest;
+  if (const absl::Status status = MessageToJson(request, &rawRequest); !status.ok()) {
+    Logger::instance().error("Failed to serialize {Containers::Create} request: " + status.ToString());
+    response.clear_id();
+    response.mutable_base()->set_error("Failed to serialize {Containers::Create} request");
+    return response;
+  }
+  json::object raw = middleware.request(http::verb::post, target, rawRequest.as_object()).as_object();
+  if (raw.contains("message")) {
+    response.clear_id();
+    response.mutable_base()->set_error(raw["message"].as_string().c_str());
+    return response;
+  }
+
+  response.set_id(raw["Id"].as_string().c_str());
+  return response;
 }
 
 json::value Docker::Containers::inspect(std::string_view id)

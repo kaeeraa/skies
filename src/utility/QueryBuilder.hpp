@@ -1,3 +1,4 @@
+#pragma once
 #include <format>
 #include <optional>
 #include <string>
@@ -5,26 +6,26 @@
 
 class QueryBuilder {
   public:
-  QueryBuilder& add(std::string_view key, const std::optional<bool>& value)
-  {
-    if (value.has_value()) {
-      append(key, *value ? "true" : "false");
-    }
-    return *this;
-  }
-
-  QueryBuilder& add(std::string_view key, const std::optional<int>& value)
-  {
-    if (value.has_value()) {
-      append(key, std::to_string(*value));
-    }
-    return *this;
-  }
-
-  QueryBuilder& add(std::string_view key, const std::optional<std::string>& value)
+  QueryBuilder& add(std::string_view key, const bool& value)
   {
     if (value) {
-      append(key, *value);
+      append(key, value ? "true" : "false");
+    }
+    return *this;
+  }
+
+  QueryBuilder& add(std::string_view key, const int& value)
+  {
+    if (value) {
+      append(key, std::to_string(value));
+    }
+    return *this;
+  }
+
+  QueryBuilder& add(std::string_view key, const std::string& value)
+  {
+    if (!value.empty()) {
+      append(key, value);
     }
     return *this;
   }

@@ -1,75 +1,98 @@
+#include "api/v1/containers/Response.pb.h"
 #include "client/DockerClient.hpp"
 #include "core/Logger.hpp"
 #include "core/Router.hpp"
-#include "schema/Request.schema.hpp"
-#include "utility/Json.hpp"
+#include "utility/ProtoBuffer.hpp"
+#include "utility/ResponseBuilder.hpp"
+#include <absl/status/status.h>
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
+#include <boost/beast/http/status.hpp>
+#include <boost/beast/http/string_body_fwd.hpp>
 #include <boost/json/fwd.hpp>
 #include <boost/json/impl/serialize.hpp>
 #include <boost/json/parse.hpp>
 #include <boost/json/serialize.hpp>
 #include <boost/json/value_to.hpp>
 #include <filesystem>
+#include <google/protobuf/util/json_util.h>
 #include <iostream>
 #include <string>
 #include <string_view>
 
 // Shorthands
 namespace beast = boost::beast;
-namespace http  = beast::http;
-namespace net   = boost::asio;
-using tcp       = net::ip::tcp;
+namespace http = beast::http;
+namespace net = boost::asio;
+namespace containers = api::v1::containers;
+using tcp = net::ip::tcp;
+using Request = http::request<http::string_body>;
+using Response = http::response<http::string_body>;
 
 // Consts
-const tcp IP   = tcp::v4();
+const tcp IP = tcp::v4();
 const int PORT = 8080;
 
-// Entrypoint
 int main()
 {
-  net::io_context    ioc;
-  tcp::acceptor      acceptor(ioc, { tcp::v4(), 8080 });
-  Router             router;
+  net::io_context ioContext;
+  tcp::acceptor acceptor(ioContext, { IP, PORT });
+  Router router;
   Docker::Containers containers;
-  const Logger&      logger = Logger::instance();
-
-  logger.info("Logger initialized");
 
   router.get("/api/containers", [&containers](const Request& raw) {
-    auto     request = parseJson<Requests::Containers::List>(raw.body());
-    auto     body    = containers.list(request);
+    containers::request::List request;
+    containers::response::List response;
 
-    Response response { http::status::ok, raw.version() };
-    response.set(http::field::content_type, "application/json");
-    response.body() = json::serialize(json::value_from(body));
-    response.prepare_payload();
-    return response;
+    if (const absl::Status status = JsonToMessage(raw.body(), &request);
+        !raw.body().empty() && !status.ok()) {
+      Logger::instance().error("Failed to parse {Containers::List} request: " + status.ToString());
+      response.mutable_base()->set_error("Failed to parse {Containers::List} request");
+      return buildResponse(response, raw.version());
+    }
+
+    response = containers.list(request);
+    return buildResponse(response, raw.version());
   });
 
-  router.post("/api/containers/create", [&containers](const Request& raw) {
-    const auto  json = parseJson<Requests::Containers::Create>(raw.body());
-    json::value body = containers.create(json);
+  router.post("/api/containers", [&containers](const Request& raw) {
+    containers::request::Create request;
+    containers::response::Create response;
 
-    Response    response { http::status::ok, raw.version() };
-    response.set(http::field::content_type, "application/json");
-    response.body() = json::serialize(body);
-    response.prepare_payload();
-    return response;
+    if (raw.body().empty()) {
+      response.mutable_base()->set_error("Request body is empty");
+      return buildResponse(http::status::bad_request, response, raw.version());
+    }
+    if (const bool status = request.ParseFromString(raw.body()); !status) {
+      response.mutable_base()->set_error("Failed to parse {Containers::Create} request");
+      return buildResponse(response, raw.version());
+    }
+    response = containers.create(request);
+    return buildResponse(response, raw.version());
   });
 
-  logger.info(std::format("Server running on http://0.0.0.0:{}{}", std::to_string(PORT), "\n"));
+  std::string addressString = acceptor.local_endpoint().address().to_string();
+  std::string portString = std::to_string(acceptor.local_endpoint().port());
+  Logger::instance().info("Listening on " + addressString + ":" + portString);
 
   for (;;) {
-    tcp::socket socket(ioc);
+    tcp::socket socket(ioContext);
     acceptor.accept(socket);
 
-    boost::beast::flat_buffer buffer;
-    Request                   request;
-    http::read(socket, buffer, request);
+    beast::flat_buffer buffer;
+    Request request;
+    try {
+      http::read(socket, buffer, request);
+    } catch (const std::exception& e) {
+      Logger::instance().error("Error reading request: " + std::string(e.what()));
 
-    auto response = router.route(request);
+      Response response(http::status::bad_request, request.version());
+      http::write(socket, response);
+      continue;
+    }
+
+    Response response = router.route(request);
     http::write(socket, response);
   }
 }

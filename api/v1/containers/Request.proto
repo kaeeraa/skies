@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package api.v1.containers.request;
+
+message List {
+  optional bool   all     = 1;
+  optional int32  limit   = 2;
+  optional bool   size    = 3;
+  optional string filters = 4;
+}
+
+message Create {
+  string          name       = 1;
+  string          hostname   = 2;
+  string          domainname = 3;
+  string          user       = 4;
+  repeated string cmd        = 5;
+  string          image      = 6;
+}
