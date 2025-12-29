@@ -52,7 +52,8 @@ add_executable(
   src/utility/QueryBuilder.hpp
   src/utility/ProtoBuffer.cpp
   src/utility/ResponseBuilder.hpp
-  src/utility/PopQuery.hpp)
+  src/utility/PopQuery.hpp
+  src/utility/SafeFunc.hpp)
 
 target_compile_options(skies PRIVATE -Wall -Wextra -Wpedantic
                                      -Wno-nullability-extension)

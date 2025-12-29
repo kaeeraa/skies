@@ -4,6 +4,7 @@
 #include "core/Router.hpp"
 #include "utility/PopQuery.hpp"
 #include "utility/ResponseBuilder.hpp"
+#include "utility/SafeFunc.hpp"
 #include <absl/status/status.h>
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
@@ -45,21 +46,13 @@ int main()
     containers::request::List request;
     containers::response::List response;
 
-    const auto& safeStoi = [](const std::string& string) {
-      try {
-        return std::stoi(string);
-      } catch (...) {
-        return 0;
-      }
-    };
-
     for (const auto& [k, v] : popQuery(std::string(raw.target()))) {
       if (k == "all") {
         request.set_all(v == "true" ? true : false);
       } else if (k == "limit") {
-        request.set_limit(safeStoi(v));
+        request.set_limit(Safe::stoi(v));
       } else if (k == "size") {
-        request.set_size(safeStoi(v));
+        request.set_size(Safe::stoi(v));
       } else if (k == "filters") {
         request.set_filters(v);
       }
