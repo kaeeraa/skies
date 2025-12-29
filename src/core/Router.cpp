@@ -10,8 +10,12 @@
 Response Router::route(const Request& request) const
 {
   std::string target = request.target();
-  popQuery(target);
+  auto query = popQuery(target);
   const auto& method = request.method();
+
+  if (const size_t qpos = target.find('?'); qpos != std::string::npos) {
+    target = target.substr(0, qpos);
+  }
 
   const auto& routes = (method == http::verb::get) ? getRoutes : postRoutes;
 
