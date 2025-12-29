@@ -1,61 +1,40 @@
 #include <boost/beast/http.hpp>
 #include <cstddef>
 #include <string>
+#include <string_view>
 
 namespace http = boost::beast::http;
 using Response = http::response<http::string_body>;
-using QueryMap = std::unordered_map<std::string, std::string>;
+using QueryMap = std::unordered_map<std::string_view, std::string_view>;
 
-inline QueryMap popQuery(std::string& url)
+inline QueryMap popQuery(std::string_view url)
 {
-  QueryMap queryParams;
+  QueryMap query;
 
-  size_t queryPos = url.find('?');
-  if (queryPos == std::string::npos) {
-    return queryParams;
+  const size_t qpos = url.find('?');
+  if (qpos == std::string_view::npos) {
+    return query;
   }
 
-  std::string queryString = url.substr(queryPos + 1);
-  url.erase(queryPos);
+  std::basic_string_view<char> queryString = url.substr(qpos + 1);
 
-  std::istringstream queryStream(queryString);
-  std::string pair;
-  while (std::getline(queryStream, pair, '&')) {
-    size_t eqPos = pair.find('=');
-    if (eqPos != std::string::npos) {
-      std::string key = pair.substr(0, eqPos);
-      std::string value = pair.substr(eqPos + 1);
-      queryParams[key] = value;
+  while (!queryString.empty()) {
+    const size_t amp = queryString.find('&');
+    const std::basic_string_view<char> pair = queryString.substr(0, amp);
+
+    if (const size_t eq = pair.find('='); eq != std::string_view::npos) {
+      query.try_emplace(
+        pair.substr(0, eq),
+        pair.substr(eq + 1));
     } else {
-      queryParams[pair] = "";
+      query.try_emplace(pair, std::string_view {});
     }
-  }
 
-  return queryParams;
-}
-inline QueryMap popQuery(const std::string& url)
-{
-  QueryMap queryParams;
-
-  size_t queryPos = url.find('?');
-  if (queryPos == std::string::npos) {
-    return queryParams;
-  }
-
-  std::string queryString = url.substr(queryPos + 1);
-
-  std::istringstream queryStream(queryString);
-  std::string pair;
-  while (std::getline(queryStream, pair, '&')) {
-    size_t eqPos = pair.find('=');
-    if (eqPos != std::string::npos) {
-      std::string key = pair.substr(0, eqPos);
-      std::string value = pair.substr(eqPos + 1);
-      queryParams[key] = value;
-    } else {
-      queryParams[pair] = "";
+    if (amp == std::string_view::npos) {
+      break;
     }
+    queryString.remove_prefix(amp + 1);
   }
 
-  return queryParams;
+  return query;
 }
