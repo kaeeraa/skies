@@ -2,6 +2,7 @@
 #include "../middleware/DockerMiddleware.hpp"
 #include "api/v1/containers/Request.pb.h"
 #include "api/v1/containers/Response.pb.h"
+#include <boost/asio/io_context.hpp>
 #include <boost/json.hpp>
 #include <string_view>
 
@@ -12,10 +13,19 @@ namespace Docker {
 class Containers {
   private:
   DockerMiddleware middleware;
+  asio::thread_pool pool_ { std::thread::hardware_concurrency() };
+
+  asio::awaitable<containers::response::List> listUnwrapped(const containers::request::List request);
+  asio::awaitable<containers::response::Create> createUnwrapped(const containers::request::Create request);
 
   public:
-  containers::response::List list(const containers::request::List& list);
-  containers::response::Create create(const containers::request::Create& body);
+  explicit Containers(const asio::any_io_executor& ex)
+    : middleware(ex)
+  {
+  }
+
+  asio::awaitable<containers::response::List> list(const containers::request::List request);
+  asio::awaitable<containers::response::Create> create(const containers::request::Create request);
   json::value inspect(std::string_view id);
   json::value processes(std::string_view id);
   json::value export_(std::string_view id);

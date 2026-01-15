@@ -8,31 +8,32 @@
 #include <iostream>
 #include <string>
 
-json::value DockerMiddleware::request(const http::verb& method, const std::string_view target, const json::object& body)
+asio::awaitable<json::value> DockerMiddleware::request(
+  http::verb method,
+  std::string target,
+  const json::object body)
 {
-  const std::string& serialized   = json::serialize(body);
-  const std::string& methodString = std::string(to_string(method));
+  boost::asio::local::stream_protocol::socket socket(ex_);
+  boost::system::error_code ec;
+  co_await socket.async_connect({ path_ }, asio::use_awaitable);
 
-  Logger::instance()
-    .trace(std::format("New request to docker (M:{} ; T:{} ; B: {})", methodString, target, serialized));
-
-  http::request<http::string_body> request;
-  request.method(method);
-  request.target(target);
-  request.version(11);
-  request.set(http::field::host, "localhost");
+  http::request<http::string_body> req;
+  req.method(method);
+  req.target(target);
+  req.version(11);
+  req.set(http::field::host, "localhost");
 
   if (!body.empty()) {
-    request.body() = serialized;
-    request.set(http::field::content_type, "application/json");
+    req.body() = json::serialize(body);
+    req.set(http::field::content_type, "application/json");
   }
+  req.prepare_payload();
 
-  request.prepare_payload();
-  http::write(socket, request);
+  co_await http::async_write(socket, req, asio::use_awaitable);
 
-  beast::flat_buffer                buffer;
-  http::response<http::string_body> response;
-  http::read(socket, buffer, response);
+  beast::flat_buffer buffer;
+  http::response<http::string_body> resp;
+  co_await http::async_read(socket, buffer, resp, asio::use_awaitable);
 
-  return json::parse(response.body());
+  co_return json::parse(resp.body());
 }

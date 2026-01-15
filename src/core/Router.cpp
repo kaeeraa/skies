@@ -1,36 +1,20 @@
 #include "Router.hpp"
 #include "../utility/PopQuery.hpp"
-#include "Logger.hpp"
-#include <boost/beast/http.hpp>
-#include <boost/beast/http/fields.hpp>
-#include <functional>
-#include <string>
-#include <unordered_map>
 
-Response Router::route(const Request& request) const
+asio::awaitable<Response> Router::route(const Request& request) const
 {
-  std::string target = request.target();
+  std::string_view target = request.target();
   auto query = popQuery(target);
-  const auto& method = request.method();
 
-  if (const size_t qpos = target.find('?'); qpos != std::string::npos) {
-    target = target.substr(0, qpos);
+  std::string_view path = target;
+  if (auto qpos = target.find('?'); qpos != std::string_view::npos) {
+    path.remove_suffix(target.size() - qpos);
   }
 
-  const auto& routes = (method == http::verb::get) ? getRoutes : postRoutes;
-
-  if (auto it = routes.find(target); it != routes.end()) {
-    Logger::instance().trace(std::format(
-      "New request {} (success, M: {})",
-      std::string(target),
-      std::string(http::to_string(method))));
-    return it->second(request);
+  const auto& routes = (request.method() == http::verb::get) ? getRoutes : postRoutes;
+  if (auto it = routes.find(path); it != routes.end()) {
+    co_return co_await it->second(request);
   }
 
-  Logger::instance().trace(std::format(
-    "New request {} (failed, M: {})",
-    std::string(target),
-    std::string(http::to_string(method))));
-
-  return Response { http::status::not_found, request.version() };
+  co_return Response { http::status::not_found, request.version() };
 }

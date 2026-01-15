@@ -2,6 +2,8 @@
 #include "client/DockerClient.hpp"
 #include "core/Logger.hpp"
 #include "core/Router.hpp"
+#include "core/Server.hpp"
+#include "middleware/DockerMiddleware.hpp"
 #include "utility/PopQuery.hpp"
 #include "utility/ResponseBuilder.hpp"
 #include "utility/SafeFunc.hpp"
@@ -37,18 +39,16 @@ const int PORT = 8080;
 
 int main()
 {
-  net::io_context ioContext;
-  tcp::acceptor acceptor(ioContext, { IP, PORT });
+  asio::io_context ioContext;
+  tcp::endpoint endpoint(IP, PORT);
   Router router;
-  Docker::Containers containers;
+  Docker::Containers containers(ioContext.get_executor());
 
-  router.get("/api/containers", [&containers](const Request& raw) {
+  router.get("/api/containers", [&containers](Request raw) -> asio::awaitable<Response> {
     containers::request::List request;
-    containers::response::List response;
-
-    for (const auto& [k, v] : popQuery(std::string(raw.target()))) {
+    for (const auto& [k, v] : popQuery(raw.target())) {
       if (k == "all") {
-        request.set_all(v == "true" ? true : false);
+        request.set_all(v == "true");
       } else if (k == "limit") {
         request.set_limit(Safe::stoi(v));
       } else if (k == "size") {
@@ -58,46 +58,49 @@ int main()
       }
     }
 
-    return buildResponse(containers.list(request), raw.version());
+    containers::response::List response;
+    try {
+      response = co_await containers.list(request);
+    } catch (const std::exception& e) {
+      response.mutable_data()->Clear();
+      response.mutable_base()->set_error("Failed to list containers: " + std::string(e.what()));
+    }
+
+    co_return buildResponse(response, raw.version());
   });
 
-  router.post("/api/containers", [&containers](const Request& raw) {
+  router.post("/api/containers", [&containers](Request raw) -> asio::awaitable<Response> {
     containers::request::Create request;
     containers::response::Create response;
 
     if (raw.body().empty()) {
       response.mutable_base()->set_error("Request body is empty");
-      return buildResponse(http::status::bad_request, response, raw.version());
+      co_return buildResponse(http::status::bad_request, response, raw.version());
     }
-    if (const bool status = request.ParseFromString(raw.body()); !status) {
+
+    if (!request.ParseFromString(raw.body())) {
       response.mutable_base()->set_error("Failed to parse {Containers::Create} request");
-      return buildResponse(response, raw.version());
+      co_return buildResponse(response, raw.version());
     }
-    response = containers.create(request);
-    return buildResponse(response, raw.version());
+
+    try {
+      response = co_await containers.create(request);
+    } catch (const std::exception& e) {
+      response.clear_id();
+      response.mutable_base()->set_error("Failed to create container: " + std::string(e.what()));
+    }
+
+    co_return buildResponse(response, raw.version());
   });
 
-  std::string addressString = acceptor.local_endpoint().address().to_string();
-  std::string portString = std::to_string(acceptor.local_endpoint().port());
-  Logger::instance().info("Listening on " + addressString + ":" + portString);
+  Server server(ioContext, endpoint, router);
 
-  for (;;) {
-    tcp::socket socket(ioContext);
-    acceptor.accept(socket);
-
-    beast::flat_buffer buffer;
-    Request request;
-    try {
-      http::read(socket, buffer, request);
-    } catch (const std::exception& e) {
-      Logger::instance().error("Error reading request: " + std::string(e.what()));
-
-      Response response(http::status::bad_request, request.version());
-      http::write(socket, response);
-      continue;
-    }
-
-    Response response = router.route(request);
-    http::write(socket, response);
+  std::vector<std::thread> threads;
+  auto n = std::thread::hardware_concurrency();
+  for (size_t i = 0; i < n; ++i) {
+    threads.emplace_back([&] { ioContext.run(); });
+  }
+  for (auto& t : threads) {
+    t.join();
   }
 }
