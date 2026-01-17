@@ -6,34 +6,34 @@
 #include <boost/beast.hpp>
 #include <boost/json.hpp>
 #include <iostream>
+#include <memory>
 #include <string>
 
 asio::awaitable<json::value> DockerMiddleware::request(
   http::verb method,
   std::string target,
-  const json::object body)
+  std::unique_ptr<json::object> body)
 {
-  boost::asio::local::stream_protocol::socket socket(ex_);
-  boost::system::error_code ec;
+  asio::local::stream_protocol::socket socket(ex_);
   co_await socket.async_connect({ path_ }, asio::use_awaitable);
 
-  http::request<http::string_body> req;
-  req.method(method);
-  req.target(target);
-  req.version(11);
-  req.set(http::field::host, "localhost");
+  Request request;
+  request.method(method);
+  request.target(target);
+  request.version(11);
+  request.set(http::field::host, "localhost");
 
-  if (!body.empty()) {
-    req.body() = json::serialize(body);
-    req.set(http::field::content_type, "application/json");
+  if (body != nullptr && !body->empty()) {
+    request.body() = json::serialize(*body);
+    request.set(http::field::content_type, "application/json");
   }
-  req.prepare_payload();
+  request.prepare_payload();
 
-  co_await http::async_write(socket, req, asio::use_awaitable);
+  co_await http::async_write(socket, request, asio::use_awaitable);
 
   beast::flat_buffer buffer;
-  http::response<http::string_body> resp;
-  co_await http::async_read(socket, buffer, resp, asio::use_awaitable);
+  Response response;
+  co_await http::async_read(socket, buffer, response, asio::use_awaitable);
 
-  co_return json::parse(resp.body());
+  co_return json::parse(response.body());
 }

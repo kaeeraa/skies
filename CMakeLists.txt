@@ -49,10 +49,9 @@ add_executable(
   src/core/Router.cpp
   src/middleware/DockerMiddleware.cpp
   src/client/DockerClient.cpp
-  src/utility/QueryBuilder.hpp
   src/utility/ProtoBuffer.cpp
   src/utility/ResponseBuilder.hpp
-  src/utility/PopQuery.hpp
+  src/utility/Query.hpp
   src/utility/SafeFunc.hpp
   src/core/Server.cpp)
 

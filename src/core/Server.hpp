@@ -34,11 +34,11 @@ class Server {
     , acceptor_(ioContext)
     , router_(router)
   {
-    beast::error_code ec;
-    acceptor_.open(endpoint.protocol(), ec);
-    acceptor_.set_option(asio::socket_base::reuse_address(true), ec);
-    acceptor_.bind(endpoint, ec);
-    acceptor_.listen(asio::socket_base::max_listen_connections, ec);
+    acceptor_.open(endpoint.protocol());
+    acceptor_.set_option(asio::socket_base::reuse_address(true));
+    acceptor_.bind(endpoint);
+    acceptor_.listen(asio::socket_base::max_listen_connections);
+
     accept();
   }
 

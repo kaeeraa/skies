@@ -1,29 +1,24 @@
 #include "DockerClient.hpp"
 #include "../middleware/DockerMiddleware.hpp"
 #include "../utility/ProtoBuffer.hpp"
-#include "../utility/QueryBuilder.hpp"
+#include "../utility/Query.hpp"
 #include <absl/status/status.h>
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/json.hpp>
+#include <memory>
 #include <string>
 
 namespace containers = api::v1::containers;
 namespace asio = boost::asio;
 namespace json = boost::json;
 
-asio::awaitable<containers::response::List> Docker::Containers::listUnwrapped(const containers::request::List request)
+asio::awaitable<containers::response::List> Docker::Containers::listUnwrapped(std::unique_ptr<Query::QueryVec> queries)
 {
   containers::response::List response;
-  QueryBuilder qb;
-  qb.add("all", request.all())
-    .add("limit", request.limit())
-    .add("size", request.size())
-    .add("filters", request.filters());
-
-  const std::string target = qb.build("/containers/json");
+  const std::string target = Query::append("/containers/json", std::move(queries));
 
   json::object object;
   try {
@@ -53,13 +48,13 @@ asio::awaitable<containers::response::List> Docker::Containers::listUnwrapped(co
   co_return response;
 }
 
-asio::awaitable<containers::response::Create> Docker::Containers::createUnwrapped(const containers::request::Create request)
+asio::awaitable<containers::response::Create> Docker::Containers::createUnwrapped(std::unique_ptr<containers::request::Create> request)
 {
   containers::response::Create response;
   const std::string target = "/containers/create";
 
   json::value rawRequest;
-  if (const absl::Status status = MessageToJson(request, &rawRequest); !status.ok()) {
+  if (const absl::Status status = MessageToJson(*request, &rawRequest); !status.ok()) {
     Logger::instance().error("Failed to serialize {Containers::Create} request: " + status.ToString());
     response.clear_id();
     response.mutable_base()->set_error("Failed to serialize {Containers::Create} request");
@@ -68,7 +63,8 @@ asio::awaitable<containers::response::Create> Docker::Containers::createUnwrappe
 
   json::value raw;
   try {
-    raw = co_await middleware.request(http::verb::post, target, rawRequest.as_object());
+    auto objectPtr = std::make_unique<json::object>(rawRequest.as_object());
+    raw = co_await middleware.request(http::verb::post, target, std::move(objectPtr));
   } catch (const std::exception& e) {
     Logger::instance().error("Docker request failed: " + std::string(e.what()));
     response.clear_id();
@@ -87,12 +83,22 @@ asio::awaitable<containers::response::Create> Docker::Containers::createUnwrappe
 }
 
 // --- Wrappers ---
-asio::awaitable<containers::response::List> Docker::Containers::list(const containers::request::List request)
+asio::awaitable<containers::response::List> Docker::Containers::list(std::unique_ptr<Query::QueryVec> queries)
 {
-  co_return co_await asio::co_spawn(pool_, [this, request]() -> asio::awaitable<containers::response::List> { co_return co_await listUnwrapped(request); }, asio::use_awaitable);
+  co_return co_await asio::co_spawn(
+    pool_,
+    [this, queries = std::move(queries)]() mutable -> asio::awaitable<containers::response::List> {
+      co_return co_await listUnwrapped(std::move(queries));
+    },
+    asio::use_awaitable);
 }
 
-asio::awaitable<containers::response::Create> Docker::Containers::create(const containers::request::Create request)
+asio::awaitable<containers::response::Create> Docker::Containers::create(std::unique_ptr<containers::request::Create> request)
 {
-  co_return co_await asio::co_spawn(pool_, [this, request]() -> asio::awaitable<containers::response::Create> { co_return co_await createUnwrapped(request); }, asio::use_awaitable);
+  co_return co_await asio::co_spawn(
+    pool_,
+    [this, request = std::move(request)]() mutable -> asio::awaitable<containers::response::Create> {
+      co_return co_await createUnwrapped(std::move(request));
+    },
+    asio::use_awaitable);
 }

@@ -1,20 +1,19 @@
 #include "Router.hpp"
-#include "../utility/PopQuery.hpp"
+#include "../utility/Query.hpp"
+#include <memory>
 
-asio::awaitable<Response> Router::route(const Request& request) const
+asio::awaitable<Response> Router::route(std::shared_ptr<const Request> request) const
 {
-  std::string_view target = request.target();
-  auto query = popQuery(target);
-
-  std::string_view path = target;
-  if (auto qpos = target.find('?'); qpos != std::string_view::npos) {
-    path.remove_suffix(target.size() - qpos);
+  std::string target = request->target();
+  auto queryPos = target.find('?');
+  if (queryPos != std::string::npos) {
+    target = target.substr(0, queryPos);
   }
 
-  const auto& routes = (request.method() == http::verb::get) ? getRoutes : postRoutes;
-  if (auto it = routes.find(path); it != routes.end()) {
-    co_return co_await it->second(request);
+  const RouteMap& routes = (request->method() == http::verb::get) ? getRoutes : postRoutes;
+  if (auto it = routes.find(target); it != routes.end()) {
+    co_return co_await it->second(std::move(request));
   }
 
-  co_return Response { http::status::not_found, request.version() };
+  co_return Response { http::status::not_found, request->version() };
 }

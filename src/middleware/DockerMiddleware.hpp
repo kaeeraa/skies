@@ -10,10 +10,12 @@ namespace asio = boost::asio;
 namespace beast = boost::beast;
 namespace http = beast::http;
 namespace json = boost::json;
+using Request = http::request<http::string_body>;
+using Response = http::response<http::string_body>;
 
 class DockerMiddleware {
   public:
-  explicit DockerMiddleware(asio::any_io_executor ex)
+  explicit DockerMiddleware(const asio::any_io_executor& ex)
     : ex_(ex)
   {
     const char* env = std::getenv("DOCKER_HOST");
@@ -30,7 +32,7 @@ class DockerMiddleware {
   asio::awaitable<json::value> request(
     http::verb method,
     std::string target,
-    json::object body = {});
+    std::unique_ptr<json::object> body = nullptr);
 
   private:
   std::string path_;

@@ -1,3 +1,4 @@
+#pragma once
 #include <charconv>
 #include <string_view>
 

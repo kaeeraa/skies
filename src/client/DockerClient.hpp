@@ -1,9 +1,11 @@
 #pragma once
 #include "../middleware/DockerMiddleware.hpp"
+#include "../utility/Query.hpp"
 #include "api/v1/containers/Request.pb.h"
 #include "api/v1/containers/Response.pb.h"
 #include <boost/asio/io_context.hpp>
 #include <boost/json.hpp>
+#include <memory>
 #include <string_view>
 
 namespace containers = api::v1::containers;
@@ -15,8 +17,8 @@ class Containers {
   DockerMiddleware middleware;
   asio::thread_pool pool_ { std::thread::hardware_concurrency() };
 
-  asio::awaitable<containers::response::List> listUnwrapped(const containers::request::List request);
-  asio::awaitable<containers::response::Create> createUnwrapped(const containers::request::Create request);
+  asio::awaitable<containers::response::List> listUnwrapped(std::unique_ptr<Query::QueryVec> queries);
+  asio::awaitable<containers::response::Create> createUnwrapped(std::unique_ptr<containers::request::Create> request);
 
   public:
   explicit Containers(const asio::any_io_executor& ex)
@@ -24,8 +26,8 @@ class Containers {
   {
   }
 
-  asio::awaitable<containers::response::List> list(const containers::request::List request);
-  asio::awaitable<containers::response::Create> create(const containers::request::Create request);
+  asio::awaitable<containers::response::List> list(std::unique_ptr<Query::QueryVec> queries);
+  asio::awaitable<containers::response::Create> create(std::unique_ptr<containers::request::Create> request);
   json::value inspect(std::string_view id);
   json::value processes(std::string_view id);
   json::value export_(std::string_view id);
