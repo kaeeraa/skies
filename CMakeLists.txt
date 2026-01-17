@@ -53,7 +53,9 @@ add_executable(
   src/utility/ResponseBuilder.hpp
   src/utility/Query.hpp
   src/utility/SafeFunc.hpp
-  src/core/Server.cpp)
+  src/core/Server.cpp
+  src/handlers/Containers.cpp
+  src/utility/Shorthands.hpp)
 
 target_compile_options(skies PRIVATE -Wall -Wextra -Wpedantic
                                      -Wno-nullability-extension)
