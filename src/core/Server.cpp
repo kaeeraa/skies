@@ -7,47 +7,65 @@ void Session::start()
 {
   auto self = shared_from_this();
 
-  asio::co_spawn(
+  aliases::net::co_spawn(
     socket_.get_executor(),
-    [self]() -> asio::awaitable<void> {
+    [self]() -> aliases::net::awaitable<void> {
       co_await self->run();
     },
-    asio::detached);
+    aliases::net::detached);
 }
 
-asio::awaitable<void> Session::run()
+aliases::net::awaitable<void> Session::run()
 {
-  beast::flat_buffer buffer;
-  while (true) {
-    auto request = std::make_shared<Request>();
-    auto response = std::make_shared<Response>();
-    response->version(11);
+  aliases::beast::flat_buffer buffer;
+  aliases::beast::error_code ec;
 
-    beast::error_code ec;
+  for (;;) {
     buffer.consume(buffer.size());
-    co_await http::async_read(socket_, buffer, *request, asio::redirect_error(asio::use_awaitable, ec));
+
+    auto request = std::make_shared<aliases::Request>();
+    aliases::Response response;
+
+    co_await aliases::http::async_read(socket_, buffer, *request,
+                                       aliases::net::redirect_error(aliases::net::use_awaitable, ec));
+
     if (ec) {
+      if (ec == aliases::http::error::end_of_stream || ec == aliases::net::error::eof || ec == aliases::net::error::connection_reset) {
+        break;
+      }
+
+      Logger::instance().error("HTTP read error: " + ec.message());
       break;
     }
 
     try {
-      response = std::make_shared<Response>(co_await router_.route(request));
+      response = co_await router_.route(request);
     } catch (const std::exception& e) {
       Logger::instance().error(e.what());
-      response->result(http::status::internal_server_error);
+      response = aliases::Response { aliases::http::status::internal_server_error, request->version() };
     }
 
-    response->prepare_payload();
-    co_await http::async_write(socket_, *response, asio::redirect_error(asio::use_awaitable, ec));
+    response.version(request->version());
+    response.keep_alive(request->keep_alive());
+    response.prepare_payload();
+
+    co_await aliases::http::async_write(
+      socket_, response,
+      aliases::net::redirect_error(aliases::net::use_awaitable, ec));
+
     if (ec) {
+      if (ec == aliases::net::error::not_connected || ec == aliases::net::error::broken_pipe) {
+        break;
+      }
+
       Logger::instance().error("HTTP write error: " + ec.message());
+      break;
+    }
+
+    if (!response.keep_alive()) {
       break;
     }
   }
 
-  beast::error_code ec;
-  socket_.shutdown(tcp::socket::shutdown_send, ec);
-  if (ec) {
-    Logger::instance().error("shutdown error: " + ec.message());
-  }
+  socket_.close(ec);
 }

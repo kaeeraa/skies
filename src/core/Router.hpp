@@ -1,4 +1,5 @@
 #pragma once
+#include "../utility/Shorthands.hpp"
 #include "Logger.hpp"
 #include <boost/asio/awaitable.hpp>
 #include <boost/beast/http.hpp>
@@ -6,31 +7,23 @@
 #include <string>
 #include <unordered_map>
 
-namespace asio = boost::asio;
-namespace http = boost::beast::http;
-
-using Request = http::request<http::string_body>;
-using Response = http::response<http::string_body>;
-using AsyncHandler = std::function<asio::awaitable<Response>(std::shared_ptr<const Request>)>;
-using RouteMap = std::unordered_map<std::string_view, AsyncHandler, std::hash<std::string_view>>;
-
 class Router {
   // fields
-  RouteMap getRoutes;
-  RouteMap postRoutes;
+  aliases::RouteMap getRoutes;
+  aliases::RouteMap postRoutes;
 
   public:
-  inline void get(const std::string_view path, AsyncHandler handler)
+  inline void get(const std::string_view path, aliases::AsyncHandler handler)
   {
     Logger::instance().trace(std::format("Created route with path {} (M: GET)", path));
     getRoutes[path] = std::move(handler);
   }
 
-  inline void post(const std::string_view path, AsyncHandler handler)
+  inline void post(const std::string_view path, aliases::AsyncHandler handler)
   {
     Logger::instance().trace(std::format("Created route with path {} (M: POST)", path));
     postRoutes[path] = std::move(handler);
   }
 
-  asio::awaitable<Response> route(std::shared_ptr<const Request> request) const;
+  aliases::net::awaitable<aliases::Response> route(std::shared_ptr<const aliases::Request> request) const;
 };

@@ -1,39 +1,48 @@
 #include "DockerMiddleware.hpp"
-
 #include "../core/Logger.hpp"
 #include <boost/asio.hpp>
 #include <boost/asio/local/stream_protocol.hpp>
 #include <boost/beast.hpp>
 #include <boost/json.hpp>
+#include <boost/scope_exit.hpp>
 #include <iostream>
 #include <memory>
 #include <string>
 
-asio::awaitable<json::value> DockerMiddleware::request(
-  http::verb method,
+aliases::net::awaitable<aliases::json::value> DockerMiddleware::request(
+  aliases::http::verb method,
   std::string target,
-  std::unique_ptr<json::object> body)
+  std::unique_ptr<aliases::json::object> body)
 {
-  asio::local::stream_protocol::socket socket(ex_);
-  co_await socket.async_connect({ path_ }, asio::use_awaitable);
+  aliases::net::local::stream_protocol::socket socket(ex_);
+  co_await socket.async_connect({ path_ }, aliases::net::use_awaitable);
 
-  Request request;
+  aliases::Request request;
   request.method(method);
   request.target(target);
   request.version(11);
-  request.set(http::field::host, "localhost");
+  request.keep_alive(false);
+  request.set(aliases::http::field::connection, "close");
+  request.set(aliases::http::field::host, "localhost");
 
   if (body != nullptr && !body->empty()) {
-    request.body() = json::serialize(*body);
-    request.set(http::field::content_type, "application/json");
+    request.body() = aliases::json::serialize(*body);
+    request.set(aliases::http::field::content_type, "application/json");
   }
   request.prepare_payload();
 
-  co_await http::async_write(socket, request, asio::use_awaitable);
+  co_await aliases::http::async_write(socket, request, aliases::net::use_awaitable);
 
-  beast::flat_buffer buffer;
-  Response response;
-  co_await http::async_read(socket, buffer, response, asio::use_awaitable);
+  aliases::beast::flat_buffer buffer;
+  aliases::Response response;
+  co_await aliases::http::async_read(socket, buffer, response, aliases::net::use_awaitable);
+  co_return aliases::json::parse(response.body());
 
-  co_return json::parse(response.body());
+  boost::system::error_code ec;
+  socket.shutdown(aliases::net::local::stream_protocol::socket::shutdown_both, ec);
+  socket.close(ec);
+
+  if (ec) {
+    Logger::instance().error("Failed to shutdown socket: " + ec.message());
+  }
 }

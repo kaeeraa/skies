@@ -7,12 +7,12 @@
 namespace Docker::Handlers {
 namespace Containers {
   inline std::unique_ptr<Docker::Containers> containers;
-  inline void Init(asio::io_context& ioContext)
+  inline void Init(aliases::net::io_context& ioContext)
   {
     containers = std::make_unique<Docker::Containers>(ioContext.get_executor());
   }
 
-  net::awaitable<Response> List(std::shared_ptr<const Request> raw);
-  asio::awaitable<Response> Create(std::shared_ptr<const Request> raw);
+  aliases::net::awaitable<aliases::Response> List(std::shared_ptr<const aliases::Request> raw);
+  aliases::net::awaitable<aliases::Response> Create(std::shared_ptr<const aliases::Request> raw);
 }
 }

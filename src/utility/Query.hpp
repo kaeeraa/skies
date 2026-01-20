@@ -7,9 +7,6 @@
 #include <string>
 #include <string_view>
 
-namespace http = boost::beast::http;
-using Response = http::response<http::string_body>;
-
 namespace Query {
 using QueryT = std::pair<std::string_view, std::string_view>;
 using QueryVec = std::vector<QueryT>;

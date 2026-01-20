@@ -1,21 +1,15 @@
 #pragma once
 #include "../core/Logger.hpp"
+#include "../utility/Shorthands.hpp"
 #include <boost/asio.hpp>
 #include <boost/asio/local/stream_protocol.hpp>
 #include <boost/beast.hpp>
 #include <boost/json.hpp>
 #include <string>
 
-namespace asio = boost::asio;
-namespace beast = boost::beast;
-namespace http = beast::http;
-namespace json = boost::json;
-using Request = http::request<http::string_body>;
-using Response = http::response<http::string_body>;
-
 class DockerMiddleware {
   public:
-  explicit DockerMiddleware(const asio::any_io_executor& ex)
+  explicit DockerMiddleware(const aliases::net::any_io_executor& ex)
     : ex_(ex)
   {
     const char* env = std::getenv("DOCKER_HOST");
@@ -29,12 +23,12 @@ class DockerMiddleware {
     }
   }
 
-  asio::awaitable<json::value> request(
-    http::verb method,
+  aliases::net::awaitable<aliases::json::value> request(
+    aliases::http::verb method,
     std::string target,
-    std::unique_ptr<json::object> body = nullptr);
+    std::unique_ptr<aliases::json::object> body = nullptr);
 
   private:
   std::string path_;
-  asio::any_io_executor ex_;
+  aliases::net::any_io_executor ex_;
 };

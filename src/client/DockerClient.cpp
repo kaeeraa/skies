@@ -11,19 +11,15 @@
 #include <memory>
 #include <string>
 
-namespace containers = api::v1::containers;
-namespace asio = boost::asio;
-namespace json = boost::json;
-
-asio::awaitable<containers::response::List> Docker::Containers::listUnwrapped(std::unique_ptr<Query::QueryVec> queries)
+aliases::net::awaitable<containers::response::List> Docker::Containers::listUnwrapped(std::unique_ptr<Query::QueryVec> queries)
 {
   containers::response::List response;
   const std::string target = Query::append("/containers/json", std::move(queries));
 
-  json::object object;
+  aliases::json::object object;
   try {
     object = {
-      { "data", co_await middleware.request(http::verb::get, target) }
+      { "data", co_await middleware.request(aliases::http::verb::get, target) }
     };
   } catch (const std::exception& e) {
     Logger::instance().error("Docker request failed: " + std::string(e.what()));
@@ -48,12 +44,12 @@ asio::awaitable<containers::response::List> Docker::Containers::listUnwrapped(st
   co_return response;
 }
 
-asio::awaitable<containers::response::Create> Docker::Containers::createUnwrapped(std::unique_ptr<containers::request::Create> request)
+aliases::net::awaitable<containers::response::Create> Docker::Containers::createUnwrapped(std::unique_ptr<containers::request::Create> request)
 {
   containers::response::Create response;
   const std::string target = "/containers/create";
 
-  json::value rawRequest;
+  aliases::json::value rawRequest;
   if (const absl::Status status = MessageToJson(*request, &rawRequest); !status.ok()) {
     Logger::instance().error("Failed to serialize {Containers::Create} request: " + status.ToString());
     response.clear_id();
@@ -61,10 +57,10 @@ asio::awaitable<containers::response::Create> Docker::Containers::createUnwrappe
     co_return response;
   }
 
-  json::value raw;
+  aliases::json::value raw;
   try {
-    auto objectPtr = std::make_unique<json::object>(rawRequest.as_object());
-    raw = co_await middleware.request(http::verb::post, target, std::move(objectPtr));
+    auto objectPtr = std::make_unique<aliases::json::object>(rawRequest.as_object());
+    raw = co_await middleware.request(aliases::http::verb::post, target, std::move(objectPtr));
   } catch (const std::exception& e) {
     Logger::instance().error("Docker request failed: " + std::string(e.what()));
     response.clear_id();
@@ -83,22 +79,22 @@ asio::awaitable<containers::response::Create> Docker::Containers::createUnwrappe
 }
 
 // --- Wrappers ---
-asio::awaitable<containers::response::List> Docker::Containers::list(std::unique_ptr<Query::QueryVec> queries)
+aliases::net::awaitable<containers::response::List> Docker::Containers::list(std::unique_ptr<Query::QueryVec> queries)
 {
-  co_return co_await asio::co_spawn(
+  co_return co_await aliases::net::co_spawn(
     pool_,
-    [this, queries = std::move(queries)]() mutable -> asio::awaitable<containers::response::List> {
+    [this, queries = std::move(queries)]() mutable -> aliases::net::awaitable<containers::response::List> {
       co_return co_await listUnwrapped(std::move(queries));
     },
-    asio::use_awaitable);
+    aliases::net::use_awaitable);
 }
 
-asio::awaitable<containers::response::Create> Docker::Containers::create(std::unique_ptr<containers::request::Create> request)
+aliases::net::awaitable<containers::response::Create> Docker::Containers::create(std::unique_ptr<containers::request::Create> request)
 {
-  co_return co_await asio::co_spawn(
+  co_return co_await aliases::net::co_spawn(
     pool_,
-    [this, request = std::move(request)]() mutable -> asio::awaitable<containers::response::Create> {
+    [this, request = std::move(request)]() mutable -> aliases::net::awaitable<containers::response::Create> {
       co_return co_await createUnwrapped(std::move(request));
     },
-    asio::use_awaitable);
+    aliases::net::use_awaitable);
 }

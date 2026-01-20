@@ -1,9 +1,8 @@
 #include "Containers.hpp"
 
-
 namespace Docker::Handlers {
 namespace Containers {
-  net::awaitable<Response> List(std::shared_ptr<const Request> raw)
+  aliases::net::awaitable<aliases::Response> List(std::shared_ptr<const aliases::Request> raw)
   {
     containers::response::List response;
     try {
@@ -15,14 +14,14 @@ namespace Containers {
 
     co_return buildResponse(response, raw->version());
   }
-  net::awaitable<Response> Create(std::shared_ptr<const Request> raw)
+  aliases::net::awaitable<aliases::Response> Create(std::shared_ptr<const aliases::Request> raw)
   {
     auto request = std::make_unique<containers::request::Create>();
     containers::response::Create response;
 
     if (raw->body().empty()) {
       response.mutable_base()->set_error("Request body is empty");
-      co_return buildResponse(http::status::bad_request, response, raw->version());
+      co_return buildResponse(aliases::http::status::bad_request, response, raw->version());
     }
 
     if (!request->ParseFromString(raw->body())) {
