@@ -1,6 +1,6 @@
 #pragma once
 #include "../middleware/DockerMiddleware.hpp"
-#include "../utility/Query.hpp"
+#include "../utility/Parameter.hpp"
 #include "../utility/Shorthands.hpp"
 #include "api/v1/containers/Request.pb.h"
 #include "api/v1/containers/Response.pb.h"
@@ -19,6 +19,7 @@ class Containers {
 
   aliases::net::awaitable<containers::response::List> listUnwrapped(std::unique_ptr<Query::QueryVec> queries);
   aliases::net::awaitable<containers::response::Create> createUnwrapped(std::unique_ptr<containers::request::Create> request);
+  aliases::net::awaitable<containers::response::Inspect> inspectUnwrapped(const std::string_view id);
 
   public:
   explicit Containers(const aliases::net::any_io_executor& ex)
@@ -28,7 +29,7 @@ class Containers {
 
   aliases::net::awaitable<containers::response::List> list(std::unique_ptr<Query::QueryVec> queries);
   aliases::net::awaitable<containers::response::Create> create(std::unique_ptr<containers::request::Create> request);
-  aliases::json::value inspect(std::string_view id);
+  aliases::net::awaitable<containers::response::Inspect> inspect(const std::string_view id);
   aliases::json::value processes(std::string_view id);
   aliases::json::value export_(std::string_view id);
   aliases::json::value start(std::string_view id);

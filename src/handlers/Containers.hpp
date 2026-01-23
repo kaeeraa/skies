@@ -1,6 +1,5 @@
 #pragma once
 #include "../client/DockerClient.hpp"
-#include "../utility/ResponseBuilder.hpp"
 #include "../utility/Shorthands.hpp"
 #include <boost/asio/awaitable.hpp>
 
@@ -14,5 +13,6 @@ namespace Containers {
 
   aliases::net::awaitable<aliases::Response> List(std::shared_ptr<const aliases::Request> raw);
   aliases::net::awaitable<aliases::Response> Create(std::shared_ptr<const aliases::Request> raw);
+  aliases::net::awaitable<aliases::Response> Inspect(std::shared_ptr<const aliases::Request> raw);
 }
 }

@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package api.v1.containers.response;
+import "google/protobuf/timestamp.proto";
 
 message BaseResponse {
   optional string error = 1;
@@ -34,6 +35,16 @@ message ListItem {
   repeated Ports      Ports      = 13;
 }
 
+// TODO: adjust as needed in future
+message InspectItem {
+  string Id = 1;
+  string Image = 2;
+  google.protobuf.Timestamp Created = 3;
+  int32 SizeRw = 4;
+  int32 SizeRootFs = 5;
+  map<string, string> Labels = 6;
+}
+
 message List {
   BaseResponse      base = 1;
   repeated ListItem data = 2;
@@ -42,4 +53,9 @@ message List {
 message Create {
   BaseResponse base = 1;
   string       id   = 2;
+}
+
+message Inspect {
+  BaseResponse base = 1;
+  InspectItem     data = 2;
 }

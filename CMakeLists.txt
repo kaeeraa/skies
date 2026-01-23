@@ -51,7 +51,7 @@ add_executable(
   src/client/DockerClient.cpp
   src/utility/ProtoBuffer.cpp
   src/utility/ResponseBuilder.hpp
-  src/utility/Query.hpp
+  src/utility/Parameter.hpp
   src/utility/SafeFunc.hpp
   src/core/Server.cpp
   src/handlers/Containers.cpp
@@ -71,4 +71,5 @@ target_link_libraries(
           absl::statusor
           absl::log
           absl::strings
-          absl::check)
+          absl::check
+          absl::flat_hash_map)

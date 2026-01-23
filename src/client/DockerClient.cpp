@@ -1,7 +1,7 @@
 #include "DockerClient.hpp"
 #include "../middleware/DockerMiddleware.hpp"
 #include "../utility/ProtoBuffer.hpp"
-#include "../utility/Query.hpp"
+#include "api/v1/containers/Response.pb.h"
 #include <absl/status/status.h>
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/co_spawn.hpp>
@@ -78,6 +78,38 @@ aliases::net::awaitable<containers::response::Create> Docker::Containers::create
   co_return response;
 }
 
+aliases::net::awaitable<containers::response::Inspect> Docker::Containers::inspectUnwrapped(const std::string_view id)
+{
+  containers::response::Inspect response;
+
+  aliases::json::object object;
+  try {
+    object = {
+      { "data", co_await middleware.request(aliases::http::verb::get, "/containers/" + std::string(id) + "/json") }
+    };
+  } catch (const std::exception& e) {
+    Logger::instance().error("Docker request failed: " + std::string(e.what()));
+    response.mutable_base()->Clear();
+    response.mutable_base()->set_error(e.what());
+    co_return response;
+  }
+
+  if (object.contains("error")) {
+    response.mutable_base()->Clear();
+    response.mutable_base()->set_error(std::string(object.at("error").as_string()));
+    co_return response;
+  }
+
+  if (const absl::Status status = JsonToMessage(object, &response); !status.ok()) {
+    Logger::instance().error("Failed to parse {Containers::Inspect} response: " + status.ToString());
+    response.mutable_base()->Clear();
+    response.mutable_base()->set_error("Failed to parse {Containers::Inspect} response");
+    co_return response;
+  }
+
+  co_return response;
+}
+
 // --- Wrappers ---
 aliases::net::awaitable<containers::response::List> Docker::Containers::list(std::unique_ptr<Query::QueryVec> queries)
 {
@@ -95,6 +127,16 @@ aliases::net::awaitable<containers::response::Create> Docker::Containers::create
     pool_,
     [this, request = std::move(request)]() mutable -> aliases::net::awaitable<containers::response::Create> {
       co_return co_await createUnwrapped(std::move(request));
+    },
+    aliases::net::use_awaitable);
+}
+
+aliases::net::awaitable<containers::response::Inspect> Docker::Containers::inspect(const std::string_view id)
+{
+  co_return co_await aliases::net::co_spawn(
+    pool_,
+    [this, id]() mutable -> aliases::net::awaitable<containers::response::Inspect> {
+      co_return co_await inspectUnwrapped(id);
     },
     aliases::net::use_awaitable);
 }
