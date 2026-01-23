@@ -14,5 +14,5 @@ using tcp = net::ip::tcp;
 using Request = http::request<http::string_body>;
 using Response = http::response<http::string_body>;
 using AsyncHandler = std::function<net::awaitable<Response>(std::shared_ptr<const Request>)>;
-using RouteMap = std::unordered_map<std::string_view, AsyncHandler, std::hash<std::string_view>>;
+using RouteMap = absl::flat_hash_map<std::string_view, AsyncHandler, std::hash<std::string_view>>;
 } // namespace aliases

@@ -13,7 +13,7 @@
 
 namespace Query {
 using QueryT = std::pair<std::string_view, std::string_view>;
-using QueryVec = std::vector<QueryT>;
+using QueryVec = absl::InlinedVector<QueryT, 8>;
 
 /**
  * @brief Removes the query string from a given URL.

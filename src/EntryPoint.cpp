@@ -2,6 +2,7 @@
 #include "core/Server.hpp"
 #include "handlers/Containers.hpp"
 #include "utility/Shorthands.hpp"
+#include <absl/container/inlined_vector.h>
 #include <thread>
 
 // Consts
@@ -21,8 +22,12 @@ int main()
 
   Server server(ioContext, endpoint, router);
 
-  std::vector<std::jthread> threads;
   unsigned int concurrency = std::thread::hardware_concurrency();
+  if (concurrency == 0) {
+    concurrency = 1;
+  }
+  absl::InlinedVector<std::jthread, 16> threads;
+  threads.reserve(concurrency);
   for (size_t i = 0; i < concurrency; ++i) {
     threads.emplace_back([&ioContext]() {
       ioContext.run();
