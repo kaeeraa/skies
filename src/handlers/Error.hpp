@@ -1,3 +1,4 @@
+#pragma once
 #include "../core/Logger.hpp"
 #include <string_view>
 

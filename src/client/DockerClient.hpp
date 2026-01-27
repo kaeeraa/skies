@@ -1,7 +1,8 @@
 #pragma once
+#include "../handlers/Error.hpp"
 #include "../middleware/DockerMiddleware.hpp"
 #include "../utility/Parameter.hpp"
-#include "../utility/Shorthands.hpp"
+#include "../utility/ProtoBuffer.hpp"
 #include "api/v1/containers/Request.pb.h"
 #include "api/v1/containers/Response.pb.h"
 #include <boost/asio/io_context.hpp>
@@ -10,6 +11,66 @@
 #include <string_view>
 
 namespace containers = api::v1::containers;
+
+template <typename Resp, typename Handler = std::nullptr_t>
+aliases::net::awaitable<Resp> callAndParse(
+  DockerMiddleware& middleware,
+  const std::string target,
+  aliases::http::verb method,
+  std::unique_ptr<aliases::json::object> body,
+  const std::string failureContext,
+  Handler&& handler = {})
+{
+  Resp response;
+  boost::system::error_code ec;
+
+  const aliases::json::value& raw = co_await middleware.request(method, std::move(target), std::move(body), &ec);
+  if (ec) {
+    setError(response, ec.message(), std::string(failureContext));
+    co_return response;
+  }
+
+  if (auto objOpt = raw.try_as_object(); objOpt.has_value()) {
+    const aliases::json::object& object = objOpt.value();
+
+    if (object.empty()) {
+      setError(response, "Empty response", std::string(failureContext));
+      co_return response;
+    }
+
+    if (const auto& message = object.try_at("message"); message.has_value()) {
+      co_return setError(response, std::format("{}: {}", failureContext, message.value().as_string().c_str()));
+    }
+
+    if constexpr (!std::is_same_v<std::remove_cvref_t<Handler>, std::nullptr_t>) {
+      if (const absl::Status status = handler(object, response); !status.ok()) {
+        co_return setError(response, status.ToString(), std::string(failureContext));
+      }
+      co_return response;
+    } else {
+      aliases::json::object data {
+        { "data", object }
+      };
+      if (const absl::Status status = JsonToMessage(data, &response); !status.ok()) {
+        co_return setError(response, status.ToString(), std::string(failureContext));
+      }
+      co_return response;
+    }
+  }
+
+  if (auto arrOpt = raw.try_as_array(); arrOpt.has_value()) {
+    aliases::json::object data {
+      { "data", arrOpt.value() }
+    };
+    if (const absl::Status status = JsonToMessage(data, &response); !status.ok()) {
+      co_return setError(response, status.ToString(), std::string(failureContext));
+    }
+    co_return response;
+  }
+
+  setError(response, "Unknown response type", std::string(failureContext));
+  co_return response;
+}
 
 namespace Docker {
 class Containers {
