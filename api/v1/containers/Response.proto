@@ -45,6 +45,11 @@ message InspectItem {
   map<string, string> Labels = 6;
 }
 
+message TopData {
+  repeated string Titles = 1;
+  repeated string Processes = 2;
+}
+
 message List {
   BaseResponse      base = 1;
   repeated ListItem data = 2;
@@ -57,5 +62,10 @@ message Create {
 
 message Inspect {
   BaseResponse base = 1;
-  InspectItem     data = 2;
+  InspectItem  data = 2;
+}
+
+message Top {
+  BaseResponse base = 1;
+  TopData      data = 2;
 }

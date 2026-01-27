@@ -19,6 +19,7 @@ int main()
   router.get("/api/containers", Docker::Handlers::Containers::List);
   router.post("/api/containers", Docker::Handlers::Containers::Create);
   router.get("/api/containers/{id}", Docker::Handlers::Containers::Inspect);
+  router.get("/api/containers/{id}/top", Docker::Handlers::Containers::Top);
 
   Server server(ioContext, endpoint, router);
 

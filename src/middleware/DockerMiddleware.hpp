@@ -26,7 +26,8 @@ class DockerMiddleware {
   aliases::net::awaitable<aliases::json::value> request(
     aliases::http::verb method,
     std::string target,
-    std::unique_ptr<aliases::json::object> body = nullptr);
+    std::unique_ptr<aliases::json::object> body = nullptr,
+    boost::system::error_code* ec = nullptr) noexcept;
 
   private:
   std::string path_;

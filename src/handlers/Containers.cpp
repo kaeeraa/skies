@@ -1,5 +1,6 @@
 #include "Containers.hpp"
 #include "../utility/ResponseBuilder.hpp"
+#include <memory>
 
 namespace Docker::Handlers {
 namespace Containers {
@@ -7,6 +8,7 @@ namespace Containers {
   {
     containers::response::List response;
     try {
+      Logger::instance().trace("List containers");
       response = co_await containers->list(Query::get(raw->target()));
     } catch (const std::exception& e) {
       response.mutable_data()->Clear();
@@ -30,6 +32,7 @@ namespace Containers {
       co_return buildResponse(response, raw->version());
     }
     try {
+      Logger::instance().trace("Create container: " + request->name());
       response = co_await containers->create(std::move(request));
     } catch (const std::exception& e) {
       response.clear_id();
@@ -42,22 +45,50 @@ namespace Containers {
   aliases::net::awaitable<aliases::Response> Inspect(std::shared_ptr<const aliases::Request> raw)
   {
     containers::response::Inspect response;
+    const std::unique_ptr<Query::QueryVec> queries = Query::get(raw->target());
     const Path::PathParams params = Path::get(raw->target(), "/api/containers/{id}");
     if (params.empty()) {
       response.mutable_base()->set_error("Invalid path parameters");
       co_return buildResponse(response, raw->version());
     }
 
-    const std::string id = params.at("id");
-    if (id.empty()) {
+    auto id = std::make_unique<std::string>(params.at("id"));
+    if (id->empty()) {
       response.mutable_base()->set_error("Invalid path parameters");
       co_return buildResponse(response, raw->version());
     }
 
     try {
-      response = co_await containers->inspect(id);
+      Logger::instance().trace("Inspect container: " + *id);
+      response = co_await containers->inspect(std::move(id));
     } catch (const std::exception& e) {
       response.mutable_base()->set_error("Failed to inspect container: " + std::string(e.what()));
+    }
+
+    co_return buildResponse(response, raw->version());
+  }
+
+  aliases::net::awaitable<aliases::Response> Top(std::shared_ptr<const aliases::Request> raw)
+  {
+    containers::response::Top response;
+    std::unique_ptr<Query::QueryVec> queries = Query::get(raw->target());
+    const Path::PathParams params = Path::get(raw->target(), "/api/containers/{id}/top");
+    if (params.empty()) {
+      response.mutable_base()->set_error("Invalid path parameters");
+      co_return buildResponse(response, raw->version());
+    }
+
+    auto id = std::make_unique<std::string>(params.at("id"));
+    if (id->empty()) {
+      response.mutable_base()->set_error("Invalid path parameters");
+      co_return buildResponse(response, raw->version());
+    }
+
+    try {
+      Logger::instance().trace("Top container: " + *id);
+      response = co_await containers->top(std::move(id), std::move(queries));
+    } catch (const std::exception& e) {
+      response.mutable_base()->set_error("Failed to top container: " + std::string(e.what()));
     }
 
     co_return buildResponse(response, raw->version());

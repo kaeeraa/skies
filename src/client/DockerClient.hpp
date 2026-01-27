@@ -19,7 +19,9 @@ class Containers {
 
   aliases::net::awaitable<containers::response::List> listUnwrapped(std::unique_ptr<Query::QueryVec> queries);
   aliases::net::awaitable<containers::response::Create> createUnwrapped(std::unique_ptr<containers::request::Create> request);
-  aliases::net::awaitable<containers::response::Inspect> inspectUnwrapped(const std::string_view id);
+  aliases::net::awaitable<containers::response::Inspect> inspectUnwrapped(std::unique_ptr<std::string> id);
+  aliases::net::awaitable<containers::response::Top> topUnwrapped(
+    std::unique_ptr<std::string> id, std::unique_ptr<Query::QueryVec>&& queries);
 
   public:
   explicit Containers(const aliases::net::any_io_executor& ex)
@@ -29,8 +31,9 @@ class Containers {
 
   aliases::net::awaitable<containers::response::List> list(std::unique_ptr<Query::QueryVec> queries);
   aliases::net::awaitable<containers::response::Create> create(std::unique_ptr<containers::request::Create> request);
-  aliases::net::awaitable<containers::response::Inspect> inspect(const std::string_view id);
-  aliases::json::value processes(std::string_view id);
+  aliases::net::awaitable<containers::response::Inspect> inspect(std::unique_ptr<std::string> id);
+  aliases::net::awaitable<containers::response::Top> top(
+    std::unique_ptr<std::string> id, std::unique_ptr<Query::QueryVec>&& queries);
   aliases::json::value export_(std::string_view id);
   aliases::json::value start(std::string_view id);
   aliases::json::value stop(std::string_view id);

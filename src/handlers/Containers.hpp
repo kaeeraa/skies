@@ -14,5 +14,6 @@ namespace Containers {
   aliases::net::awaitable<aliases::Response> List(std::shared_ptr<const aliases::Request> raw);
   aliases::net::awaitable<aliases::Response> Create(std::shared_ptr<const aliases::Request> raw);
   aliases::net::awaitable<aliases::Response> Inspect(std::shared_ptr<const aliases::Request> raw);
+  aliases::net::awaitable<aliases::Response> Top(std::shared_ptr<const aliases::Request> raw);
 }
 }

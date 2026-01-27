@@ -150,8 +150,13 @@ inline absl::InlinedVector<std::string, 16> splitSlash(const std::string_view ur
  * @return A list of key-value pairs, where each key is a parameter name and each value is the parameter's value.
  * @example Given the URL "https://example.com/path/a/b" and the pattern "https://example.com/path/{a}/{b}", the function will return a list containing the pairs ("a", "a") and ("b", "b").
  */
-inline PathParams get(const std::string_view url, const std::string_view pattern)
+inline PathParams get(std::string_view url, const std::string_view pattern)
 {
+  const size_t queryPos = url.find('?');
+  if (queryPos != std::string_view::npos) {
+    url.remove_suffix(url.size() - queryPos);
+  }
+
   auto urlSegments = splitSlash(url);
   auto patternSegments = splitSlash(pattern);
 
