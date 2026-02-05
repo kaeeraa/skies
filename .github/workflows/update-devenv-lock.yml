@@ -1,0 +1,51 @@
+name: Update devenv.lock
+
+on:
+  schedule:
+    - cron: '0 6 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh-lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+      - name: Enable Nix cache for devenv
+        uses: cachix/cachix-action@v16
+        with:
+          name: devenv
+      - name: Install devenv
+        run: nix profile install nixpkgs#devenv
+      - name: Export nix profile to PATH
+        run: echo "$HOME/.nix-profile/bin" >> $GITHUB_PATH
+      - name: Update devenv inputs
+        run: devenv update
+      - name: Configure git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: main
+          branch: devenv-lock-update-${{ github.run_id }}
+          title: chore: refresh devenv.lock
+          body: |
+            ## Summary
+            - pin the most recent inputs from the `devenv` ecosystem
+
+            ## Testing
+            - `devenv update`
+          labels: automerge,devenv-lock
+          commit-message: chore: refresh devenv.lock
+          delete-branch: true
