@@ -66,7 +66,7 @@ aliases::net::awaitable<containers::response::Top> Docker::Containers::topUnwrap
 {
   std::string target = "/containers/" + *id + "/top";
   if (queries != nullptr) {
-    Query::append(target, std::move(queries));
+    target = Query::append(target, std::move(queries));
   }
 
   co_return co_await callAndParse<containers::response::Top>(

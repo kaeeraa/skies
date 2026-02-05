@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 4.1.2)
 set(CMAKE_CXX_STANDARD 23)
 
+# User options
+option(BUILD_TESTS "Enable unit tests" ON)
+
 set(PROTO_FILES api/v1/containers/Request.proto
                 api/v1/containers/Response.proto api/v1/Error.proto)
 
@@ -43,6 +46,10 @@ if(CCache)
   message(STATUS "Using ccache")
 endif()
 
+if(BUILD_TESTS)
+  enable_testing()
+endif()
+
 add_executable(
   skies
   src/EntryPoint.cpp
@@ -73,3 +80,7 @@ target_link_libraries(
           absl::strings
           absl::check
           absl::flat_hash_map)
+
+if(BUILD_TESTS)
+  add_subdirectory("tests")
+endif()

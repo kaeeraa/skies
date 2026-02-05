@@ -1,0 +1,23 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "cmake",
+			"label": "CMake: build test",
+			"command": "build",
+			"targets": [
+				"query_tests"
+			],
+			"problemMatcher": [],
+		},
+		{
+			"type": "cmake",
+			"label": "CMake: test",
+			"command": "test",
+			"problemMatcher": [],
+			"dependsOn": [
+				"CMake: build test"
+			]
+		}
+	]
+}
