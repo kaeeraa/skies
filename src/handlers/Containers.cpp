@@ -77,7 +77,7 @@ namespace Containers {
       co_return buildResponse(response, raw->version());
     }
 
-    auto id = tryId(raw, response, "/api/containers/{id}/top");
+    auto id = tryId(raw, response, "/api/containers/{id}");
     co_return co_await handleRequest(
       raw,
       response,
