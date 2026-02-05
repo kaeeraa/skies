@@ -64,12 +64,10 @@ aliases::net::awaitable<containers::response::Inspect> Docker::Containers::inspe
 
 aliases::net::awaitable<containers::response::Top> Docker::Containers::topUnwrapped(std::unique_ptr<std::string> id, std::unique_ptr<Query::QueryVec>&& queries)
 {
-  if (queries == nullptr) {
-    queries = std::make_unique<Query::QueryVec>();
-  }
-
   std::string target = "/containers/" + *id + "/top";
-  Query::append(target, std::move(queries));
+  if (queries != nullptr) {
+    Query::append(target, std::move(queries));
+  }
 
   co_return co_await callAndParse<containers::response::Top>(
     middleware,
