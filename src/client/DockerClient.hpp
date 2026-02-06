@@ -3,12 +3,14 @@
 #include "../middleware/DockerMiddleware.hpp"
 #include "../utility/Parameter.hpp"
 #include "../utility/ProtoBuffer.hpp"
+#include "ContainersInterface.hpp"
 #include "api/v1/containers/Request.pb.h"
 #include "api/v1/containers/Response.pb.h"
 #include <boost/asio/io_context.hpp>
 #include <boost/json.hpp>
 #include <memory>
 #include <string_view>
+#include <thread>
 
 namespace containers = api::v1::containers;
 
@@ -73,7 +75,7 @@ aliases::net::awaitable<Resp> callAndParse(
 }
 
 namespace Docker {
-class Containers {
+class Containers : public IContainers {
   private:
   DockerMiddleware middleware;
   aliases::net::thread_pool pool_ { std::thread::hardware_concurrency() };
@@ -90,11 +92,11 @@ class Containers {
   {
   }
 
-  aliases::net::awaitable<containers::response::List> list(std::unique_ptr<Query::QueryVec> queries);
-  aliases::net::awaitable<containers::response::Create> create(std::unique_ptr<containers::request::Create> request);
-  aliases::net::awaitable<containers::response::Inspect> inspect(std::unique_ptr<std::string> id);
+  aliases::net::awaitable<containers::response::List> list(std::unique_ptr<Query::QueryVec> queries) override;
+  aliases::net::awaitable<containers::response::Create> create(std::unique_ptr<containers::request::Create> request) override;
+  aliases::net::awaitable<containers::response::Inspect> inspect(std::unique_ptr<std::string> id) override;
   aliases::net::awaitable<containers::response::Top> top(
-    std::unique_ptr<std::string> id, std::unique_ptr<Query::QueryVec>&& queries);
+    std::unique_ptr<std::string> id, std::unique_ptr<Query::QueryVec>&& queries) override;
   aliases::json::value export_(std::string_view id);
   aliases::json::value start(std::string_view id);
   aliases::json::value stop(std::string_view id);

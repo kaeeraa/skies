@@ -6,7 +6,7 @@
 
 namespace Docker::Handlers {
 namespace Containers {
-  inline std::unique_ptr<Docker::Containers> containers;
+  inline std::unique_ptr<Docker::IContainers> containers;
   inline void Init(aliases::net::io_context& ioContext)
   {
     containers = std::make_unique<Docker::Containers>(ioContext.get_executor());
